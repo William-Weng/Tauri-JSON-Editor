@@ -6,4 +6,4 @@ pnpm install
 pnpm run tauri dev
 ```
 
-https://github.com/user-attachments/assets/6256c74d-b4de-4923-9f0d-d2f6757005e9
+https://github.com/user-attachments/assets/c56ba9e5-030a-4a66-a6bd-c31e6546acf7
