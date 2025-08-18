@@ -175,6 +175,7 @@ h1 {
 .panels {
   display: flex;
   height: 100%;
+  margin: 0 -1rem; /* Absorb child margins */
 }
 
 .panel {
@@ -183,10 +184,7 @@ h1 {
   flex-direction: column;
   overflow: hidden;
   transition: all 0.4s ease-in-out;
-}
-
-.panel + .panel {
-  margin-left: 2rem;
+  margin: 0 1rem; /* Create gap */
 }
 
 .panel-hidden {
@@ -195,11 +193,7 @@ h1 {
   opacity: 0;
   padding: 0;
   border: 0;
-  margin-left: 0;
-}
-
-.panel-hidden + .panel {
-  margin-left: 0;
+  margin: 0;
 }
 
 .panel-header {
