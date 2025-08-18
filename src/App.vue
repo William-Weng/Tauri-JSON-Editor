@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 
@@ -28,6 +28,12 @@ const isLeftPanelVisible = ref(true);
 
 // To store the last valid parsed JSON object
 const displayData = ref({});
+
+// Computed property for dynamic styles on the output panel
+const outputStyle = computed(() => ({
+  fontSize: outputFontSize.value + 'em',
+  '--vjs-padding-left': showLineNumber.value ? 'calc(3ch + 4px)' : '4px',
+}));
 
 // Initialize with the default valid JSON
 try {
@@ -144,7 +150,7 @@ function handleEdit(newData: any) {
           :show-length="showLength"
           :editable="isEditable"
           @update:data="handleEdit"
-          :style="{ fontSize: outputFontSize + 'em' }"
+          :style="outputStyle"
         />
       </div>
     </div>
@@ -305,6 +311,7 @@ textarea:focus {
   border: 1px solid #444;
   border-radius: 8px;
   padding: 1em;
+  padding-left: var(--vjs-padding-left, 4px) !important;
   font-family: Menlo, Monaco, 'Courier New', monospace; /* Set monospace font */
 }
 
