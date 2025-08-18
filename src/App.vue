@@ -109,7 +109,7 @@ function handleEdit(newData: any) {
 <template>
   <main class="container">
     <div class="panels">
-      <div class="panel" v-if="isLeftPanelVisible">
+      <div class="panel" :class="{ 'panel-hidden': !isLeftPanelVisible }">
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
@@ -123,7 +123,7 @@ function handleEdit(newData: any) {
         <textarea v-model="rawJsonInput" :style="{ fontSize: fontSize + 'em' }"></textarea>
         <div v-if="error" class="error-display">{{ error }}</div>
       </div>
-      <div class="panel" v-if="isRightPanelVisible">
+      <div class="panel" :class="{ 'panel-hidden': !isRightPanelVisible }">
         <div class="panel-header">
           <h2>Formatted Output</h2>
           <div class="button-group">
@@ -174,15 +174,32 @@ h1 {
 
 .panels {
   display: flex;
-  gap: 2rem;
   height: 100%;
 }
 
 .panel {
-  flex: 1;
+  flex: 1 1 50%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: all 0.4s ease-in-out;
+}
+
+.panel + .panel {
+  margin-left: 2rem;
+}
+
+.panel-hidden {
+  flex: 0 0 0;
+  min-width: 0;
+  opacity: 0;
+  padding: 0;
+  border: 0;
+  margin-left: 0;
+}
+
+.panel-hidden + .panel {
+  margin-left: 0;
 }
 
 .panel-header {
