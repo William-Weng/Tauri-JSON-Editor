@@ -23,6 +23,8 @@ const showLength = ref(true);
 const isEditable = ref(true);
 const fontSize = ref(1.15); // in em
 const outputFontSize = ref(1.3); // in em
+const isRightPanelVisible = ref(true);
+const isLeftPanelVisible = ref(true);
 
 // To store the last valid parsed JSON object
 const displayData = ref({});
@@ -46,6 +48,14 @@ watch(rawJsonInput, (newInput) => {
     // Importantly, we DO NOT modify displayData, so it keeps showing the last valid state
   }
 }, { immediate: false }); // immediate:false because we already initialized it
+
+function toggleRightPanel() {
+  isRightPanelVisible.value = !isRightPanelVisible.value;
+}
+
+function toggleLeftPanel() {
+  isLeftPanelVisible.value = !isLeftPanelVisible.value;
+}
 
 function increaseFontSize() {
   fontSize.value += 0.1;
@@ -99,28 +109,30 @@ function handleEdit(newData: any) {
 <template>
   <main class="container">
     <div class="panels">
-      <div class="panel">
+      <div class="panel" v-if="isLeftPanelVisible">
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
-            <button @click="formatJson" class="format-button">Format</button>
-            <button @click="minifyJson" class="format-button">Minify</button>
+            <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
             <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
             <button @click="increaseFontSize" title="Increase font size" class="font-size-button">+</button>
+            <button @click="formatJson" class="format-button">Format</button>
+            <button @click="minifyJson" class="format-button">Minify</button>
           </div>
         </div>
         <textarea v-model="rawJsonInput" :style="{ fontSize: fontSize + 'em' }"></textarea>
         <div v-if="error" class="error-display">{{ error }}</div>
       </div>
-      <div class="panel">
+      <div class="panel" v-if="isRightPanelVisible">
         <div class="panel-header">
           <h2>Formatted Output</h2>
           <div class="button-group">
+            <button @click="toggleLeftPanel" :title="isLeftPanelVisible ? 'Hide Input Panel' : 'Show Input Panel'" class="toggle-panel-button">{{ isLeftPanelVisible ? 'Hide' : 'Show' }}</button>
+            <button @click="decreaseOutputFontSize" title="Decrease font size" class="font-size-button">-</button>
+            <button @click="increaseOutputFontSize" title="Increase font size" class="font-size-button">+</button>
             <button @click="showLineNumber = !showLineNumber" :class="{ active: showLineNumber }">Line No.</button>
             <button @click="showLength = !showLength" :class="{ active: showLength }">Length</button>
             <button @click="isEditable = !isEditable" :class="{ active: isEditable }">Editable</button>
-            <button @click="decreaseOutputFontSize" title="Decrease font size" class="font-size-button">-</button>
-            <button @click="increaseOutputFontSize" title="Increase font size" class="font-size-button">+</button>
           </div>
         </div>
         <vue-json-pretty
@@ -237,6 +249,15 @@ button.active:hover {
 
 .font-size-button:hover {
   background-color: #c9302c;
+}
+
+.toggle-panel-button {
+  background-color: #20c997;
+  color: white;
+}
+
+.toggle-panel-button:hover {
+  background-color: #1baa80;
 }
 
 textarea {
