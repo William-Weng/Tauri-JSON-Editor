@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 
@@ -109,6 +109,35 @@ function handleEdit(newData: any) {
   // We update our source of truth (rawJsonInput) to reflect this change.
   rawJsonInput.value = JSON.stringify(newData, null, 2);
 }
+
+// Keyboard shortcuts handler
+const handleKeydown = (event: KeyboardEvent) => {
+  // Check for Command (metaKey on macOS) or Ctrl (ctrlKey on other OSes)
+  if (event.metaKey || event.ctrlKey) {
+    switch (event.key) {
+      case '=': // Typically the key for '+' without Shift
+      case '+':
+        event.preventDefault();
+        increaseFontSize();
+        increaseOutputFontSize();
+        break;
+      case '-':
+        event.preventDefault();
+        decreaseFontSize();
+        decreaseOutputFontSize();
+        break;
+    }
+  }
+};
+
+// Set up and tear down the global event listener
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+});
 
 </script>
 
