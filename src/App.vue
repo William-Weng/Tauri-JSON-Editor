@@ -21,6 +21,8 @@ const error = ref('');
 const showLineNumber = ref(true);
 const showLength = ref(true);
 const isEditable = ref(true);
+const fontSize = ref(1.15); // in em
+const outputFontSize = ref(1.3); // in em
 
 // To store the last valid parsed JSON object
 const displayData = ref({});
@@ -44,6 +46,26 @@ watch(rawJsonInput, (newInput) => {
     // Importantly, we DO NOT modify displayData, so it keeps showing the last valid state
   }
 }, { immediate: false }); // immediate:false because we already initialized it
+
+function increaseFontSize() {
+  fontSize.value += 0.1;
+}
+
+function decreaseFontSize() {
+  if (fontSize.value > 0.5) { // Prevent it from getting too small
+    fontSize.value -= 0.1;
+  }
+}
+
+function increaseOutputFontSize() {
+  outputFontSize.value += 0.1;
+}
+
+function decreaseOutputFontSize() {
+  if (outputFontSize.value > 0.5) {
+    outputFontSize.value -= 0.1;
+  }
+}
 
 function formatJson() {
   try {
@@ -80,12 +102,14 @@ function handleEdit(newData: any) {
       <div class="panel">
         <div class="panel-header">
           <h2>Input JSON</h2>
-          <div class="button-group format-buttons">
-            <button @click="formatJson">Format</button>
-            <button @click="minifyJson">Minify</button>
+          <div class="button-group">
+            <button @click="formatJson" class="format-button">Format</button>
+            <button @click="minifyJson" class="format-button">Minify</button>
+            <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
+            <button @click="increaseFontSize" title="Increase font size" class="font-size-button">+</button>
           </div>
         </div>
-        <textarea v-model="rawJsonInput"></textarea>
+        <textarea v-model="rawJsonInput" :style="{ fontSize: fontSize + 'em' }"></textarea>
         <div v-if="error" class="error-display">{{ error }}</div>
       </div>
       <div class="panel">
@@ -95,6 +119,8 @@ function handleEdit(newData: any) {
             <button @click="showLineNumber = !showLineNumber" :class="{ active: showLineNumber }">Line No.</button>
             <button @click="showLength = !showLength" :class="{ active: showLength }">Length</button>
             <button @click="isEditable = !isEditable" :class="{ active: isEditable }">Editable</button>
+            <button @click="decreaseOutputFontSize" title="Decrease font size" class="font-size-button">-</button>
+            <button @click="increaseOutputFontSize" title="Increase font size" class="font-size-button">+</button>
           </div>
         </div>
         <vue-json-pretty
@@ -106,6 +132,7 @@ function handleEdit(newData: any) {
           :show-length="showLength"
           :editable="isEditable"
           @update:data="handleEdit"
+          :style="{ fontSize: outputFontSize + 'em' }"
         />
       </div>
     </div>
@@ -194,13 +221,22 @@ button.active:hover {
   background-color: #6f9a14;
 }
 
-.format-buttons button {
+.format-button {
   background-color: #007bff;
   color: white;
 }
 
-.format-buttons button:hover {
+.format-button:hover {
   background-color: #0056b3;
+}
+
+.font-size-button {
+  background-color: #d9534f;
+  color: white;
+}
+
+.font-size-button:hover {
+  background-color: #c9302c;
 }
 
 textarea {
@@ -210,7 +246,6 @@ textarea {
   padding: 0.8em;
   font-family: Menlo, Monaco, 'Courier New', monospace;
   resize: none;
-  font-size: 1.15em;
   line-height: 1.5;
   background-color: #2a2a2a;
   color: #e0e0e0;
@@ -238,7 +273,6 @@ textarea:focus {
   border: 1px solid #444;
   border-radius: 8px;
   padding: 1em;
-  font-size: 1.3em; /* Match textarea font size */
   font-family: Menlo, Monaco, 'Courier New', monospace; /* Set monospace font */
 }
 
