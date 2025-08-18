@@ -119,11 +119,11 @@ function handleEdit(newData: any) {
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
+            <button @click="formatJson" class="format-button">Format</button>
+            <button @click="minifyJson" class="format-button">Minify</button>
             <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
             <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
             <button @click="increaseFontSize" title="Increase font size" class="font-size-button">+</button>
-            <button @click="formatJson" class="format-button">Format</button>
-            <button @click="minifyJson" class="format-button">Minify</button>
           </div>
         </div>
         <textarea v-model="rawJsonInput" :style="{ fontSize: fontSize + 'em' }"></textarea>
@@ -133,12 +133,12 @@ function handleEdit(newData: any) {
         <div class="panel-header">
           <h2>Formatted Output</h2>
           <div class="button-group">
-            <button @click="toggleLeftPanel" :title="isLeftPanelVisible ? 'Hide Input Panel' : 'Show Input Panel'" class="toggle-panel-button">{{ isLeftPanelVisible ? 'Hide' : 'Show' }}</button>
-            <button @click="decreaseOutputFontSize" title="Decrease font size" class="font-size-button">-</button>
-            <button @click="increaseOutputFontSize" title="Increase font size" class="font-size-button">+</button>
             <button @click="showLineNumber = !showLineNumber" :class="{ active: showLineNumber }">Line No.</button>
             <button @click="showLength = !showLength" :class="{ active: showLength }">Length</button>
             <button @click="isEditable = !isEditable" :class="{ active: isEditable }">Editable</button>
+            <button @click="toggleLeftPanel" :title="isLeftPanelVisible ? 'Hide Input Panel' : 'Show Input Panel'" class="toggle-panel-button">{{ isLeftPanelVisible ? 'Hide' : 'Show' }}</button>
+            <button @click="decreaseOutputFontSize" title="Decrease font size" class="font-size-button">-</button>
+            <button @click="increaseOutputFontSize" title="Increase font size" class="font-size-button">+</button>
           </div>
         </div>
         <vue-json-pretty
