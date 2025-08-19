@@ -20,61 +20,79 @@ const rawJsonInput = ref(`{
   }
 }`);
 
-const fileExtensions = ['json', 'txt'];
-
-const error = ref('');
+const errorMessage = ref('');
 const showLineNumber = ref(true);
 const showLength = ref(true);
 const isEditable = ref(true);
-const fontSize = ref(1.15); // in em
-const outputFontSize = ref(1.3); // in em
+const fontSize = ref(1.2);
+const outputFontSize = ref(1.3);
 const isRightPanelVisible = ref(true);
 const isLeftPanelVisible = ref(true);
-const isFormatMode = ref(false); // Start with Minify as the next action, since the default JSON is already formatted
-
-// To store the last valid parsed JSON object
+const isFormatMode = ref(false);
+const fileExtensions = ['json', 'txt'];
 const displayData = ref({});
 
-// Computed property for dynamic styles on the output panel
 const outputStyle = computed(() => ({
   fontSize: outputFontSize.value + 'em',
   '--vjs-padding-left': showLineNumber.value ? 'calc(3ch + 4px)' : '4px',
 }));
 
-// Initialize with the default valid JSON
 try {
   displayData.value = JSON.parse(rawJsonInput.value);
-} catch (e) {
-  // Initial content might be invalid in some cases
+} catch (error) {
   displayData.value = { error: "Invalid initial JSON" };
 }
 
-// Watch for input changes to validate and update
-watch(rawJsonInput, (newInput) => {
-  try {
-    const parsed = JSON.parse(newInput); // Parse with indentation for pretty output
-    displayData.value = parsed; // On success, update the data to be displayed
-    error.value = ''; // and clear any existing error
-  } catch (e: any) {
-    error.value = e.message; // On failure, set the error message
-    // Importantly, we DO NOT modify displayData, so it keeps showing the last valid state
-  }
-}, { immediate: false }); // immediate:false because we already initialized it
+/** 
+ * 切換輸入面板的顯示狀態 (左)
+ */
+function toggleLeftPanel() { isLeftPanelVisible.value = !isLeftPanelVisible.value; }
 
-function toggleRightPanel() {
-  isRightPanelVisible.value = !isRightPanelVisible.value;
+/** 
+ * 切換輸出面板的顯示狀態 (右)
+ */
+function toggleRightPanel() { isRightPanelVisible.value = !isRightPanelVisible.value; }
+
+/** 
+ * 增加輸入面板字體大小 (左)
+ */
+function increaseFontSize() { fontSize.value += 0.1; }
+
+/** 
+ * 減少輸入面板字體大小 - 最小限制為 0.5em (左)
+ */ 
+function decreaseFontSize() {
+  if (fontSize.value > 0.5) { fontSize.value -= 0.1; }
 }
 
-function toggleLeftPanel() {
-  isLeftPanelVisible.value = !isLeftPanelVisible.value;
+/** 
+ * 增加輸出面板的字體大小 (右)
+ */
+function increaseOutputFontSize() {
+  outputFontSize.value += 0.1;
 }
 
-function increaseFontSize() {
-  fontSize.value += 0.1;
+/** 
+ * 減少輸出面板的字體大小 - 最小限制為 0.5em (右) 
+ */ 
+function decreaseOutputFontSize() {
+  if (outputFontSize.value > 0.5) { outputFontSize.value -= 0.1; }
 }
 
-async function openFile() {
-  
+/** 
+ * 切換格式化 / 壓縮模式 
+ */
+function toggleFormatMinify() {
+  isFormatMode.value = !isFormatMode.value;
+  _toggleFormat(isFormatMode.value);
+}
+
+// MARK: - async functions
+/** 
+ * 打開文件選擇對話框並讀取 JSON 文件
+ */
+async function readFile() {
+
   const filePath = await open({
     multiple: false,
     directory: false,
@@ -84,12 +102,16 @@ async function openFile() {
   displayJSON(filePath as string);
 }
 
+/** 
+ * 根據文件路徑讀取 JSON 文件並顯示內容
+ * @param filePath - 要讀取的文件路徑
+ */
 async function displayJSON(filePath?: string) {
 
-  if (!filePath) { error.value = 'file extension is null.'; return; } // If no file was selected, exit early
+  if (!filePath) { errorMessage.value = 'file extension is null.'; return; }
 
   const fileExtension = filePath.split('.').pop();
-  if (!fileExtensions.includes(fileExtension || '')) { error.value = `Unsupported file type: ${fileExtension}`; return; }
+  if (!fileExtensions.includes(fileExtension || '')) { errorMessage.value = `Unsupported file type: ${fileExtension}`; return; }
 
   const lines = await readTextFileLines(filePath);
   let parsed = '';
@@ -100,72 +122,49 @@ async function displayJSON(filePath?: string) {
   }
 
   rawJsonInput.value = parsed.trim();
-  toggleFormat(isFormatMode.value);
+  _toggleFormat(isFormatMode.value);
 }
 
-function decreaseFontSize() {
-  if (fontSize.value > 0.5) { // Prevent it from getting too small
-    fontSize.value -= 0.1;
-  }
-}
-
-function increaseOutputFontSize() {
-  outputFontSize.value += 0.1;
-}
-
-function decreaseOutputFontSize() {
-  if (outputFontSize.value > 0.5) {
-    outputFontSize.value -= 0.1;
-  }
-}
-
-function toggleFormatMinify() {
-  isFormatMode.value = !isFormatMode.value;
-  toggleFormat(isFormatMode.value);
-}
-
-function toggleFormat(isFormatMode: boolean) {
-  try {
-    const parsed = JSON.parse(rawJsonInput.value);
-    if (isFormatMode) {
-      rawJsonInput.value = JSON.stringify(parsed, null, 2);
-    } else {
-      rawJsonInput.value = JSON.stringify(parsed);
-    }
-    error.value = ''; // Clear error on success
-  } catch (e: any) {
-    error.value = `Invalid JSON: ${e.message}`;
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// MARK: - event handlers
+/** 處理編輯事件
+ * @param newData - 編輯後的新數據
+ */
 function handleEdit(newData: any) {
-  // When data is edited in vue-json-pretty, it emits the new data.
-  // We update our source of truth (rawJsonInput) to reflect this change.
   rawJsonInput.value = JSON.stringify(newData, null, 2);
 }
 
-// Keyboard shortcuts handler
-const handleKeydown = (event: KeyboardEvent) => {
-  // Check for Command (metaKey on macOS) or Ctrl (ctrlKey on other OSes)
+/** 處理原始 JSON 輸入變更
+ * @param newInput - 新的原始 JSON 輸入
+ */
+function handleRawJsonInputChange(newInput: string) {
+  try {
+    const parsed = JSON.parse(newInput);
+    displayData.value = parsed;
+    errorMessage.value = '';
+  } catch (error: any) {
+    errorMessage.value = error.message;
+  }
+}
+
+/**
+ * 處理鍵盤事件以增減字體大小 (Command / Ctrl + '+' / '=' / '-')
+ * @param event - 鍵盤事件
+ */
+function handleKeyboardEvent(event: KeyboardEvent) {
+
   if (event.metaKey || event.ctrlKey) {
     switch (event.key) {
       case '=': // Typically the key for '+' without Shift
-      case '+':
-        event.preventDefault();
-        increaseFontSize();
-        increaseOutputFontSize();
-        break;
-      case '-':
-        event.preventDefault();
-        decreaseFontSize();
-        decreaseOutputFontSize();
-        break;
+      case '+': event.preventDefault(); increaseFontSize(); increaseOutputFontSize(); break;
+      case '-': event.preventDefault(); decreaseFontSize(); decreaseOutputFontSize(); break;
     }
   }
-};
+}
 
-function listenFileDragDrop() {
+/**
+ * 處理文件拖放事件
+ */
+function handleFileDragDrop() {
 
   listen('tauri://drag-drop', (event: any) => {
     if (event?.payload?.paths.length > 0) {
@@ -175,15 +174,34 @@ function listenFileDragDrop() {
   });
 }
 
-// Set up and tear down the global event listener
+// MARK: - private functions
+/** 切換格式化或壓縮模式
+ * @param isFormatMode - 是不是要格式化顯示
+ */
+function _toggleFormat(isFormatMode: boolean) {
+
+  try {
+    const parsed = JSON.parse(rawJsonInput.value);
+    rawJsonInput.value = (!isFormatMode) ? JSON.stringify(parsed, null, 2) : JSON.stringify(parsed);
+    errorMessage.value = '';
+  } catch (error: any) {
+    errorMessage.value = `Invalid JSON: ${error.message}`;
+  }
+}
+
+// MARK: - 生命週期
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown);
-  listenFileDragDrop();
+  window.addEventListener('keydown', handleKeyboardEvent);
+  handleFileDragDrop();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('keydown', handleKeyboardEvent);
 });
+
+watch(rawJsonInput, (newInput: string) => {
+  handleRawJsonInputChange(newInput);
+}, { immediate: false });
 
 </script>
 
@@ -194,7 +212,7 @@ onUnmounted(() => {
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
-            <button @click="openFile" title="open file" class="open-button">Open</button>
+            <button @click="readFile" title="read file" class="read-button">Read</button>
             <button @click="toggleFormatMinify" class="format-button">{{ isFormatMode ? 'Format' : 'Minify' }}</button>
             <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
             <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
@@ -202,7 +220,7 @@ onUnmounted(() => {
           </div>
         </div>
         <textarea v-model="rawJsonInput" :style="{ fontSize: fontSize + 'em' }"></textarea>
-        <div v-if="error" class="error-display">{{ error }}</div>
+        <div v-if="errorMessage" class="error-display">{{ errorMessage }}</div>
       </div>
       <div class="panel" :class="{ 'panel-hidden': !isRightPanelVisible }">
         <div class="panel-header">
@@ -326,12 +344,12 @@ button.active:hover {
   background-color: #6f9a14;
 }
 
-.open-button {
+.read-button {
   background-color: #ff0000;
   color: white;
 }
 
-.open-button:hover {
+.read-button:hover {
   background-color: #c80000;
 }
 
