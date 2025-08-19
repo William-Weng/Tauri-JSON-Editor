@@ -83,21 +83,18 @@ function decreaseOutputFontSize() {
   }
 }
 
-function formatJson() {
-  try {
-    const parsed = JSON.parse(rawJsonInput.value);
-    rawJsonInput.value = JSON.stringify(parsed, null, 2);
-    error.value = ''; // Clear error on successful format
-  } catch (e: any) {
-    error.value = `Invalid JSON: ${e.message}`;
-  }
-}
+const isFormatMode = ref(false); // Start with Minify as the next action, since the default JSON is already formatted
 
-function minifyJson() {
+function toggleFormatMinify() {
   try {
     const parsed = JSON.parse(rawJsonInput.value);
-    rawJsonInput.value = JSON.stringify(parsed);
-    error.value = ''; // Clear error on successful minify
+    if (isFormatMode.value) {
+      rawJsonInput.value = JSON.stringify(parsed, null, 2);
+    } else {
+      rawJsonInput.value = JSON.stringify(parsed);
+    }
+    error.value = ''; // Clear error on success
+    isFormatMode.value = !isFormatMode.value; // Toggle the mode for the next click
   } catch (e: any) {
     error.value = `Invalid JSON: ${e.message}`;
   }
@@ -148,8 +145,7 @@ onUnmounted(() => {
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
-            <button @click="formatJson" class="format-button">Format</button>
-            <button @click="minifyJson" class="format-button">Minify</button>
+            <button @click="toggleFormatMinify" class="format-button">{{ isFormatMode ? 'Format' : 'Minify' }}</button>
             <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
             <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
             <button @click="increaseFontSize" title="Increase font size" class="font-size-button">+</button>
@@ -188,6 +184,7 @@ onUnmounted(() => {
 
 <style scoped>
 :global(body) {
+  margin: 0;
   background-color: #1a1a1a;
   color: #e0e0e0;
 }
