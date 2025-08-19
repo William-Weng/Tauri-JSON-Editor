@@ -2,6 +2,8 @@
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
+import { open } from '@tauri-apps/plugin-dialog';
+import { readTextFileLines } from '@tauri-apps/plugin-fs';
 
 const rawJsonInput = ref(`{
   "name": "Tauri-JSON-Editor",
@@ -65,6 +67,35 @@ function toggleLeftPanel() {
 
 function increaseFontSize() {
   fontSize.value += 0.1;
+}
+
+async function openfile() {
+  const filePath = await open({
+    multiple: false,
+    directory: false,
+    filters: [
+      {
+        name: 'JSON Files',
+        extensions: ['json', 'txt'],
+      },
+    ],
+  });
+
+  if (typeof filePath === 'string') {
+    console.log(filePath);
+
+      const lines = await readTextFileLines(filePath);
+      let parsed = '';
+
+      for await (const line of lines) {
+        if (line.trim()) { // Only process non-empty lines
+          parsed += line.replace(/\0/g, '') + '\n'; // Build the string for parsing
+        }
+      }
+
+      console.log(parsed);
+      rawJsonInput.value = parsed // Set the input to the parsed content
+  }
 }
 
 function decreaseFontSize() {
@@ -145,6 +176,7 @@ onUnmounted(() => {
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
+            <button @click="openfile" title="open file" class="open-button">Open</button>
             <button @click="toggleFormatMinify" class="format-button">{{ isFormatMode ? 'Format' : 'Minify' }}</button>
             <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
             <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
@@ -274,6 +306,15 @@ button.active {
 
 button.active:hover {
   background-color: #6f9a14;
+}
+
+.open-button {
+  background-color: #ff0000;
+  color: white;
+}
+
+.open-button:hover {
+  background-color: #c80000;
 }
 
 .format-button {
