@@ -3,7 +3,7 @@
 ## 安裝執行
 ```bash
 pnpm install
-pnpm run tauri dev
+pnpm run tauri build
 ```
 
 https://github.com/user-attachments/assets/c56ba9e5-030a-4a66-a6bd-c31e6546acf7
