@@ -4,6 +4,7 @@ import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readTextFileLines } from '@tauri-apps/plugin-fs';
+import { listen } from "@tauri-apps/api/event";
 
 const rawJsonInput = ref(`{
   "name": "Tauri-JSON-Editor",
@@ -19,6 +20,8 @@ const rawJsonInput = ref(`{
   }
 }`);
 
+const fileExtensions = ['json', 'txt'];
+
 const error = ref('');
 const showLineNumber = ref(true);
 const showLength = ref(true);
@@ -27,6 +30,7 @@ const fontSize = ref(1.15); // in em
 const outputFontSize = ref(1.3); // in em
 const isRightPanelVisible = ref(true);
 const isLeftPanelVisible = ref(true);
+const isFormatMode = ref(false); // Start with Minify as the next action, since the default JSON is already formatted
 
 // To store the last valid parsed JSON object
 const displayData = ref({});
@@ -48,7 +52,7 @@ try {
 // Watch for input changes to validate and update
 watch(rawJsonInput, (newInput) => {
   try {
-    const parsed = JSON.parse(newInput);
+    const parsed = JSON.parse(newInput); // Parse with indentation for pretty output
     displayData.value = parsed; // On success, update the data to be displayed
     error.value = ''; // and clear any existing error
   } catch (e: any) {
@@ -69,33 +73,34 @@ function increaseFontSize() {
   fontSize.value += 0.1;
 }
 
-async function openfile() {
+async function openFile() {
+  
   const filePath = await open({
     multiple: false,
     directory: false,
-    filters: [
-      {
-        name: 'JSON Files',
-        extensions: ['json', 'txt'],
-      },
-    ],
+    filters: [{ name: 'JSON Files', extensions: fileExtensions }],
   });
 
-  if (typeof filePath === 'string') {
-    console.log(filePath);
+  displayJSON(filePath as string);
+}
 
-      const lines = await readTextFileLines(filePath);
-      let parsed = '';
+async function displayJSON(filePath?: string) {
 
-      for await (const line of lines) {
-        if (line.trim()) { // Only process non-empty lines
-          parsed += line.replace(/\0/g, '') + '\n'; // Build the string for parsing
-        }
-      }
+  if (!filePath) { error.value = 'file extension is null.'; return; } // If no file was selected, exit early
 
-      console.log(parsed);
-      rawJsonInput.value = parsed // Set the input to the parsed content
+  const fileExtension = filePath.split('.').pop();
+  if (!fileExtensions.includes(fileExtension || '')) { error.value = `Unsupported file type: ${fileExtension}`; return; }
+
+  const lines = await readTextFileLines(filePath);
+  let parsed = '';
+
+  for await (const line of lines) {
+    const trimmedLine = line.trim().replace(/\0/g, '');
+    if (trimmedLine) { parsed += trimmedLine + '\n'; }
   }
+
+  rawJsonInput.value = parsed.trim();
+  toggleFormat(isFormatMode.value);
 }
 
 function decreaseFontSize() {
@@ -114,18 +119,20 @@ function decreaseOutputFontSize() {
   }
 }
 
-const isFormatMode = ref(false); // Start with Minify as the next action, since the default JSON is already formatted
-
 function toggleFormatMinify() {
+  isFormatMode.value = !isFormatMode.value;
+  toggleFormat(isFormatMode.value);
+}
+
+function toggleFormat(isFormatMode: boolean) {
   try {
     const parsed = JSON.parse(rawJsonInput.value);
-    if (isFormatMode.value) {
+    if (isFormatMode) {
       rawJsonInput.value = JSON.stringify(parsed, null, 2);
     } else {
       rawJsonInput.value = JSON.stringify(parsed);
     }
     error.value = ''; // Clear error on success
-    isFormatMode.value = !isFormatMode.value; // Toggle the mode for the next click
   } catch (e: any) {
     error.value = `Invalid JSON: ${e.message}`;
   }
@@ -158,9 +165,20 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
+function listenFileDragDrop() {
+
+  listen('tauri://drag-drop', (event: any) => {
+    if (event?.payload?.paths.length > 0) {
+      const filePath = event.payload.paths[0];
+      displayJSON(filePath);
+    }
+  });
+}
+
 // Set up and tear down the global event listener
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown);
+  listenFileDragDrop();
 });
 
 onUnmounted(() => {
@@ -176,7 +194,7 @@ onUnmounted(() => {
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
-            <button @click="openfile" title="open file" class="open-button">Open</button>
+            <button @click="openFile" title="open file" class="open-button">Open</button>
             <button @click="toggleFormatMinify" class="format-button">{{ isFormatMode ? 'Format' : 'Minify' }}</button>
             <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
             <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
