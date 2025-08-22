@@ -117,8 +117,9 @@ async function displayJSON(filePath?: string) {
   let parsed = '';
 
   for await (const line of lines) {
-    const trimmedLine = line.trim().replace(/\0/g, '');
-    if (trimmedLine) { parsed += trimmedLine + '\n'; }
+    let newLine = line
+    if (line.endsWith('\0')) { newLine = line.slice(0, -1); };
+    parsed += newLine + '\n';
   }
 
   rawJsonInput.value = parsed.trim();
