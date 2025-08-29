@@ -31,6 +31,8 @@ const isLeftPanelVisible = ref(true);
 const isFormatMode = ref(false);
 const fileExtensions = ['json', 'txt'];
 const displayData = ref({});
+const textareaBackgroundColor = ref('#444');
+const colorInput = ref<HTMLInputElement | null>(null);
 
 const outputStyle = computed(() => ({
   fontSize: outputFontSize.value + 'em',
@@ -85,6 +87,21 @@ function decreaseOutputFontSize() {
 function toggleFormatMinify() {
   isFormatMode.value = !isFormatMode.value;
   _toggleFormat(isFormatMode.value);
+}
+
+/**
+ * 取得設定好的背景色色碼
+ */
+function defaultBackgroundColor() {
+  const savedColor = localStorage.getItem('textareaBackgroundColor');
+  if (savedColor) { textareaBackgroundColor.value = savedColor; }
+}
+
+/**
+ * 開啟調色盤
+ */
+function openColorPicker() {
+  colorInput.value?.click();
 }
 
 // MARK: - async functions
@@ -194,6 +211,7 @@ function _toggleFormat(isFormatMode: boolean) {
 onMounted(() => {
   window.addEventListener('keydown', handleKeyboardEvent);
   handleFileDragDrop();
+  defaultBackgroundColor();
 });
 
 onUnmounted(() => {
@@ -203,6 +221,10 @@ onUnmounted(() => {
 watch(rawJsonInput, (newInput: string) => {
   handleRawJsonInputChange(newInput);
 }, { immediate: false });
+
+watch(textareaBackgroundColor, (newColor: any) => {
+  localStorage.setItem('textareaBackgroundColor', newColor);
+});
 
 </script>
 
@@ -216,11 +238,17 @@ watch(rawJsonInput, (newInput: string) => {
             <button @click="readFile" title="read file" class="read-button">Read</button>
             <button @click="toggleFormatMinify" class="format-button">{{ isFormatMode ? 'Format' : 'Minify' }}</button>
             <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
+            <div style="position: relative;">
+              <button @click="openColorPicker" title="Change background color">
+                Color
+                <input type="color" ref="colorInput" v-model="textareaBackgroundColor" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" />
+              </button>
+            </div>
             <button @click="decreaseFontSize" title="Decrease font size" class="font-size-button">-</button>
             <button @click="increaseFontSize" title="Increase font size" class="font-size-button">+</button>
           </div>
         </div>
-        <textarea v-model="rawJsonInput" :style="{ fontSize: fontSize + 'em' }"></textarea>
+        <textarea v-model="rawJsonInput" :style="{fontSize: fontSize + 'em', backgroundColor: textareaBackgroundColor}"></textarea>
         <div v-if="errorMessage" class="error-display">{{ errorMessage }}</div>
       </div>
       <div class="panel" :class="{ 'panel-hidden': !isRightPanelVisible }">
@@ -389,7 +417,7 @@ textarea {
   font-family: Menlo, Monaco, 'Courier New', monospace;
   resize: none;
   line-height: 1.5;
-  background-color: #2a2a2a;
+  background-color: #444;
   color: #e0e0e0;
 }
 
