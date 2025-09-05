@@ -2,8 +2,8 @@
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
-import { open } from '@tauri-apps/plugin-dialog';
-import { readTextFileLines } from '@tauri-apps/plugin-fs';
+import { open, save } from '@tauri-apps/plugin-dialog';
+import { readTextFileLines, writeTextFile } from '@tauri-apps/plugin-fs';
 import { listen } from "@tauri-apps/api/event";
 
 const rawJsonInput = ref(`{
@@ -20,12 +20,14 @@ const rawJsonInput = ref(`{
   }
 }`);
 
+const defaultInputFontSize = 1.2
+const defaultOutputFontSize = 1.2
 const errorMessage = ref('');
 const showLineNumber = ref(true);
 const showLength = ref(true);
 const isEditable = ref(true);
-const fontSize = ref(1.2);
-const outputFontSize = ref(1.3);
+const inputFontSize = ref(defaultInputFontSize);
+const outputFontSize = ref(defaultOutputFontSize);
 const isRightPanelVisible = ref(true);
 const isLeftPanelVisible = ref(true);
 const isFormatMode = ref(false);
@@ -33,6 +35,8 @@ const fileExtensions = ['json', 'txt'];
 const displayData = ref({});
 const textareaBackgroundColor = ref('#444');
 const colorInput = ref<HTMLInputElement | null>(null);
+
+let defaultPath = 'untitled.json'
 
 const outputStyle = computed(() => ({
   fontSize: outputFontSize.value + 'em',
@@ -58,13 +62,13 @@ function toggleRightPanel() { isRightPanelVisible.value = !isRightPanelVisible.v
 /** 
  * 增加輸入面板字體大小 (左)
  */
-function increaseFontSize() { fontSize.value += 0.1; }
+function increaseFontSize() { inputFontSize.value += 0.1; }
 
 /** 
  * 減少輸入面板字體大小 - 最小限制為 0.5em (左)
  */ 
 function decreaseFontSize() {
-  if (fontSize.value > 0.5) { fontSize.value -= 0.1; }
+  if (inputFontSize.value > 0.5) { inputFontSize.value -= 0.1; }
 }
 
 /** 
@@ -79,6 +83,14 @@ function increaseOutputFontSize() {
  */ 
 function decreaseOutputFontSize() {
   if (outputFontSize.value > 0.5) { outputFontSize.value -= 0.1; }
+}
+
+/**
+ * 回復面板預設字體大小
+ */
+function resetFontSize() {
+  inputFontSize.value = defaultInputFontSize
+  outputFontSize.value = defaultOutputFontSize
 }
 
 /** 
@@ -108,7 +120,7 @@ function openColorPicker() {
 /** 
  * 打開文件選擇對話框並讀取 JSON 文件
  */
-async function readFile() {
+async function openFile() {
 
   const filePath = await open({
     multiple: false,
@@ -117,6 +129,29 @@ async function readFile() {
   });
 
   displayJSON(filePath as string);
+}
+
+/**
+ * 打開文件保存對話框並保存 Markdown 文件
+ */
+async function saveFile() {
+
+  try {
+    const filePath = await save({
+      filters: [{ name: 'Markdown Files', extensions: fileExtensions }],
+      defaultPath: defaultPath
+    });
+
+    errorMessage.value = 'File saved successfully!';
+    if (!filePath) { errorMessage.value = 'No file path selected.'; return; }
+    if (typeof filePath !== 'string') { errorMessage.value = 'Invalid file path selected.'; return; }
+
+    await writeTextFile(filePath, rawJsonInput.value);
+    defaultPath = filePath as string;
+  } catch (error) {
+    errorMessage.value = `Error saving file: ${error}`;
+    console.error('Error saving file:', error);
+  }
 }
 
 /** 
@@ -171,10 +206,16 @@ function handleRawJsonInputChange(newInput: string) {
 function handleKeyboardEvent(event: KeyboardEvent) {
 
   if (event.metaKey || event.ctrlKey) {
+
+    event.preventDefault()
+
     switch (event.key) {
       case '=': // Typically the key for '+' without Shift
-      case '+': event.preventDefault(); increaseFontSize(); increaseOutputFontSize(); break;
-      case '-': event.preventDefault(); decreaseFontSize(); decreaseOutputFontSize(); break;
+      case '+': increaseFontSize(); increaseOutputFontSize(); break;
+      case '-': decreaseFontSize(); decreaseOutputFontSize(); break;
+      case '0': resetFontSize(); break;
+      case 'o': openFile(); break;
+      case 's': saveFile(); break;
     }
   }
 }
@@ -186,8 +227,8 @@ function handleFileDragDrop() {
 
   listen('tauri://drag-drop', (event: any) => {
     if (event?.payload?.paths.length > 0) {
-      const filePath = event.payload.paths[0];
-      displayJSON(filePath);
+      defaultPath = event.payload.paths[0];
+      displayJSON(defaultPath);
     }
   });
 }
@@ -235,7 +276,8 @@ watch(textareaBackgroundColor, (newColor: any) => {
         <div class="panel-header">
           <h2>Input JSON</h2>
           <div class="button-group">
-            <button @click="readFile" title="read file" class="read-button">Read</button>
+            <button @click="openFile" title="Open file" class="open-button">Open</button>
+            <button @click="saveFile" title="Save file" class="save-button">Save</button>
             <button @click="toggleFormatMinify" class="format-button">{{ isFormatMode ? 'Format' : 'Minify' }}</button>
             <button @click="toggleRightPanel" :title="isRightPanelVisible ? 'Hide Output Panel' : 'Show Output Panel'" class="toggle-panel-button">{{ isRightPanelVisible ? 'Hide' : 'Show' }}</button>
             <div style="position: relative;">
@@ -248,7 +290,7 @@ watch(textareaBackgroundColor, (newColor: any) => {
             <button @click="increaseFontSize" title="Increase font size" class="font-size-button">+</button>
           </div>
         </div>
-        <textarea v-model="rawJsonInput" :style="{fontSize: fontSize + 'em', backgroundColor: textareaBackgroundColor}"></textarea>
+        <textarea v-model="rawJsonInput" :style="{fontSize: inputFontSize + 'em', backgroundColor: textareaBackgroundColor}"></textarea>
         <div v-if="errorMessage" class="error-display">{{ errorMessage }}</div>
       </div>
       <div class="panel" :class="{ 'panel-hidden': !isRightPanelVisible }">
@@ -373,13 +415,22 @@ button.active:hover {
   background-color: #6f9a14;
 }
 
-.read-button {
+.open-button {
   background-color: #ff0000;
   color: white;
 }
 
-.read-button:hover {
+.open-button:hover {
   background-color: #c80000;
+}
+
+.save-button {
+  background-color: #FF00FF; /* A standard brown */
+  color: white;
+}
+
+.save-button:hover {
+  background-color: #e9068f; /* A darker brown for hover */
 }
 
 .format-button {

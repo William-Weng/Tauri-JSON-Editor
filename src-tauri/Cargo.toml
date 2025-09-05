@@ -1,6 +1,6 @@
 [package]
 name = "tauri-json-editor"
-version = "0.1.5"
+version = "0.1.6"
 description = "以Tauri + Vue-JSON-Pretty實現的JSON編譯器"
 authors = ["William"]
 edition = "2021"
