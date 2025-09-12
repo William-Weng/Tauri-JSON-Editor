@@ -207,8 +207,9 @@ function handleKeyboardEvent(event: KeyboardEvent) {
 
   if (event.metaKey || event.ctrlKey) {
 
-    event.preventDefault()
+    if (['a', 'c', 'v', 'z'].includes(event.key)) { return; } // 忽略常用快捷鍵
 
+    event.preventDefault()
     switch (event.key) {
       case '=': // Typically the key for '+' without Shift
       case '+': increaseFontSize(); increaseOutputFontSize(); break;
