@@ -207,7 +207,7 @@ function handleKeyboardEvent(event: KeyboardEvent) {
 
   if (event.metaKey || event.ctrlKey) {
 
-    if (['a', 'c', 'v', 'z'].includes(event.key)) { return; } // 忽略常用快捷鍵
+    if (['a', 'c', 'v', 'z', 'q'].includes(event.key)) { return; } // 忽略常用快捷鍵
 
     event.preventDefault()
     switch (event.key) {
