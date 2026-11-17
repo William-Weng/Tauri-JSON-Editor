@@ -1,4 +1,4 @@
-# ⚠️ Tauri-Markdown-Editor 已停止維護, 請改用 [Wails-JSON-Editor](https://github.com/William-Weng/Wails-JSON-Editor)
+# ⚠️ Tauri-JSON-Editor 已停止維護, 請改用 [Wails-JSON-Editor](https://github.com/William-Weng/Wails-JSON-Editor)
 
 ## [簡易的JSON編輯器](https://jsoneditoronline.org/)
 
